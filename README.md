@@ -6,7 +6,7 @@ In this course, we will define *system* as a compound of software and hardware e
 
 Figure 1 depicts a typical schematic of a real time system in which a set of sensors are connected to one or several process units. Those process units gather the measurements of the sensors and execute the control logic. This control logic, finally, and if needed, sends orders to the actuators.
 
-![](Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.001.png)
+![](README/Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.001.png)
 
 **Figure 1.-** Schematic view of a real time system.
 
@@ -86,7 +86,7 @@ This command will do all the job. We recommend reading carefully the output of t
 
 During the boot of the simulator, several functions to create and initialize part of the control logic are executed by the operating system. Figure 2 shows the order in which these initialization functions are executed.
 
-![](Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.002.png)
+![](README/Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.002.png)
 
 **Figure 2.-** Boot process
 
@@ -436,7 +436,7 @@ The drift engine generates a horizontal acceleration of 0.1m/s^2 (positive means
 
 The Pasadena’s Mission Control Center follows the advances of the P.O.D. in its final approach to the Moon. For that, they monitor in real time the position of the P.O.D. and the current state of the engines and sensors with a screen like the following one: 
 
-![](Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.003.jpeg)
+![](README/Aspose.Words.20a78f38-1d37-4d8f-9ea6-8e6d62382abf.003.jpeg)
 
 Figure 1: HUD 
 
