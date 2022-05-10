@@ -12,10 +12,16 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include "control.h"
+#include "sensors.h"
+
 #include "actuators.h"
 
 int init_actuators()
-{
+{   struct sensor sensors[6];
+    printf("sensor print desde act%s",sensors[0].name);
+    fflush(stdout);
+    
     return 0;
 }
 

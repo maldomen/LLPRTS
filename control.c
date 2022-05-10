@@ -19,7 +19,8 @@
 #include "sensors.h"
 #include "actuators.h"
 
-static int connect_socket(int port, int *fd){
+
+int connect_socket(int port, int *fd){
 struct sockaddr_in serv_addr;
 int try=0;
 if ((*fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -44,13 +45,15 @@ if (try==5) return -1;
 return 0;
 }
 
-static int connect_pipe(char *pipe_name, int *fd_read, int *fd_write){
+int connect_pipe(char *pipe_name, int *fd_read, int *fd_write){
+
 char channel_read[256];
 char channel_write[256];
 int try;
 sprintf(channel_read, "%s_read", pipe_name);
 sprintf(channel_write, "%s_write", pipe_name);
 try=0;
+
 while (((*fd_read = open(channel_read, O_RDONLY))<0)&&(try<5)){
     usleep(500000);
     try++;
@@ -90,6 +93,8 @@ int send_action(int fd, char*message){
 
 
 int init_tasks()
-{
+{   
+    struct sensor sensors[6];
+
     return 0;
 }

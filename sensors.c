@@ -12,55 +12,53 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include "control.h"
+#include "simulation_parameters.h"
 #include "sensors.h"
 
-/* init sensors creara els threads que atenen els sockets dels diferents sensors 
-*/
 
+//extern struct sensor sensors[6];
 
-int create_socket(int *socket_fd,int port,char *nom){
-    int server_fd,valread;
-    struct sockaddr_in adress_in;
-    int addrlenin = sizeof(adress_in);
-    char buffer[256];
-
-    // Creating socket file descriptor
+int init_sensors(){
+    struct sensor sensors[6]={}; //inicialitzem tot a 0
     
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0))
-        == 0) {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
-    }
-
- 
-    adress_in.sin_family = AF_INET;
-    adress_in.sin_addr.s_addr = INADDR_ANY;
-    adress_in.sin_port = htons(port);
-    // Forcefully attaching socket to the port pin
-    if (bind(server_fd, (struct sockaddr*)&adress_in,
-             sizeof(adress_in))
-        < 0) {
-        exit(EXIT_FAILURE);
-    }
-    if (listen(server_fd, 5) < 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-
+    //speed
+    strcpy(sensors[0].name,"Speedpipe");
     
+    sensors[0].port=0;
+    sensors[0].delay=3;
+    connect_pipe("Speedpipe",&sensors[0].fd,&sensors[0].fd2);
     
-    if ((*socket_fd= accept(server_fd, (struct sockaddr*)&adress_in,(socklen_t*)&addrlenin)) <0)  {
-        printf("accept\n");
-        exit(EXIT_FAILURE);
-    }
+    //altitude1
+    strcpy(sensors[1].name,"Altitude_1");
+    sensors[1].port=20010;
+    sensors[1].delay=100;
     
-    printf("%s conectat a control\n", nom);
-
-    }
-
- 
-int init_sensors()
-{
+    //altitude2
+    strcpy(sensors[2].name,"Altitude_2");
+    sensors[2].port=20011;
+    sensors[2].delay=100;
+    
+    //altitude3
+    strcpy(sensors[3].name,"Altitude_3");
+    sensors[3].port=20012;
+    sensors[3].delay=100;
+    
+    //left sensor
+    strcpy(sensors[4].name,"Left_sensor");
+    sensors[4].port=20015;
+    sensors[4].delay=300;
+    
+    //right sensor
+    strcpy(sensors[5].name,"Right_sensor");
+    sensors[5].port=20016;
+    sensors[5].delay=300;
+    
+    //fd sockets
+    for(int i=0;i<6;i++){
+        connect_socket(sensors[i].port, &sensors[i].fd);
+    } 
+    
     return 0;
 }
 
