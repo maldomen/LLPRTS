@@ -16,12 +16,24 @@
 #include "sensors.h"
 
 #include "actuators.h"
-
+struct actuator actuators[3]={};
 int init_actuators()
-{   struct sensor sensors[6];
-    printf("sensor print desde act%s",sensors[0].name);
-    fflush(stdout);
-    
+{   
+    //pump1
+    strcpy(actuators[0].name,"Pump_1");
+    actuators[0].port=20000;
+    actuators[0].delay=50;
+    //pump2
+    strcpy(actuators[1].name,"Pump_2");
+    actuators[1].port=20001;
+    actuators[0].delay=50;
+    //drift
+    strcpy(actuators[2].name,"Drift");
+    actuators[2].port=20002;
+    actuators[0].delay=500;
+    for(int i=0;i<3;i++){
+        connect_socket(actuators[i].port,&actuators[i].fd);
+    }
     return 0;
 }
 

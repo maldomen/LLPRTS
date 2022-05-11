@@ -14,7 +14,7 @@
 #include <fcntl.h>
 
 #include "os.h"
-
+#include "architecture.h"
 #include "control.h"
 #include "sensors.h"
 #include "actuators.h"
@@ -91,10 +91,20 @@ int send_action(int fd, char*message){
 
 
 
+static float speed=0.0;
+void task_read_speed(void *param) {
+read_pipe_active_float( sensors[0].fd,&speed);
+}
+void task_motor(void *param){
+    send_action(actuators[0].fd,"start");
+}
 
-int init_tasks()
-{   
-    struct sensor sensors[6];
+int init_tasks() {
+PTASK taskpeed=NULL,motorbr=NULL;
+Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 3, 3);
+Readyqueue_enqueue(tasks_queue, taskpeed);
+Task_create(&motorbr, "voy puesto de speed", task_motor, NULL, 2, 3);
+Readyqueue_enqueue(tasks_queue, motorbr);
 
-    return 0;
+
 }

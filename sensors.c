@@ -17,10 +17,10 @@
 #include "sensors.h"
 
 
-//extern struct sensor sensors[6];
 
+struct sensor sensors[6]={}; //inicialitzem tot a 0 de manera global
 int init_sensors(){
-    struct sensor sensors[6]={}; //inicialitzem tot a 0
+    
     
     //speed
     strcpy(sensors[0].name,"Speedpipe");
