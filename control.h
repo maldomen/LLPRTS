@@ -8,6 +8,8 @@ int read_socket_passive_float(int fd, float *value);
 
 void task_read_speed(void *param);
 void task_motor(void *param);
+void task_w(void *param);
+
 
 int init_tasks();
 

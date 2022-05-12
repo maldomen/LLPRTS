@@ -95,16 +95,68 @@ static float speed=0.0;
 void task_read_speed(void *param) {
 read_pipe_active_float( sensors[0].fd,&speed);
 }
+/*
 void task_motor(void *param){
     send_action(actuators[0].fd,"start");
+}*/
+void task_w(void *param){
+    char c;
+   
+    while(1) {
+        
+        c=getchar();
+        if(c=='w'){
+            send_action(actuators[0].fd,"start");
+            send_action(actuators[1].fd,"start");
+            usleep(350000);
+            c='\0';
+            fflush(stdin);
+            send_action(actuators[0].fd,"turnoff");
+            send_action(actuators[1].fd,"turnoff");
+        }
+        else if(c=='a'){
+            send_action(actuators[2].fd,"right");
+            usleep(350000);
+            c='\0';
+            fflush(stdin);
+            send_action(actuators[2].fd,"release");
+            
+        }
+        else if(c=='d'){
+            send_action(actuators[2].fd,"left");
+            usleep(350000);
+            c='\0';
+            fflush(stdin);
+            send_action(actuators[2].fd,"release");
+            
+        }
+      
+        
+    }
 }
 
 int init_tasks() {
-PTASK taskpeed=NULL,motorbr=NULL;
-Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 3, 3);
-Readyqueue_enqueue(tasks_queue, taskpeed);
-Task_create(&motorbr, "voy puesto de speed", task_motor, NULL, 2, 3);
-Readyqueue_enqueue(tasks_queue, motorbr);
+    // Set the terminal to raw mode
+    system("stty raw");
+    char c;
+    PTASK taskpeed=NULL,ww=NULL;
+    printf("Apreta cualsevol tecla per mode automatic, apreta m per mode manual (usuaris experts en pilotatge P.O.D.)");
+    fflush(stdout);
+    c=getchar();
+    if(c=='m'){
+        while(c!=' '){
+        printf("pilotatge manual selecionat, bona sort pilot.\n Com ja deus saber si has selecionat aquesta opcio els controls w,a,d activen els motors corresponents durant 350 ms\n Apreta ESPAI per començar la aventura");
+        fflush(stdout);
+        c=getchar();
+        }
+        Task_create(&ww, "ww", task_w, NULL, 3, 3);
+        Readyqueue_enqueue(tasks_queue, ww);
+    }
+    else{
+    Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 3, 3);
+    Readyqueue_enqueue(tasks_queue, taskpeed);
+    }
+
 
 
 }
