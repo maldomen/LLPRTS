@@ -99,7 +99,7 @@ read_pipe_active_float( sensors[0].fd,&speed);
 void task_motor(void *param){
     send_action(actuators[0].fd,"start");
 }*/
-void task_w(void *param){
+void task_manual(void *param){
     char c;
    
     while(1) {
@@ -136,20 +136,21 @@ void task_w(void *param){
 }
 
 int init_tasks() {
-    // Set the terminal to raw mode
-    system("stty raw");
+    
     char c;
     PTASK taskpeed=NULL,ww=NULL;
-    printf("Apreta cualsevol tecla per mode automatic, apreta m per mode manual (usuaris experts en pilotatge P.O.D.)");
+    printf("\nApreta cualsevol tecla per mode automatic, apreta m per mode manual (usuaris experts en pilotatge P.O.D.)\n");
     fflush(stdout);
     c=getchar();
     if(c=='m'){
         while(c!=' '){
-        printf("pilotatge manual selecionat, bona sort pilot.\n Com ja deus saber si has selecionat aquesta opcio els controls w,a,d activen els motors corresponents durant 350 ms\n Apreta ESPAI per començar la aventura");
+        // Set the terminal to raw mode
+        system("stty raw");
+        printf("pilotatge manual selecionat, bona sort pilot.\n Com ja deus saber si has selecionat aquesta opcio els controls w,a,d activen els motors corresponents durant 350 ms\n Apreta ESPAI per començar la aventura\n");
         fflush(stdout);
         c=getchar();
         }
-        Task_create(&ww, "ww", task_w, NULL, 3, 3);
+        Task_create(&ww, "ww", task_manual, NULL, 3, 3);
         Readyqueue_enqueue(tasks_queue, ww);
     }
     else{

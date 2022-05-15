@@ -23,12 +23,13 @@ int init_sensors(){
     
     
     //speed
-    strcpy(sensors[0].name,"Speedpipe");
+    strcpy(sensors[0].name,"speedpipe");
     
     sensors[0].port=0;
     sensors[0].delay=3;
-    connect_pipe("Speedpipe",&sensors[0].fd,&sensors[0].fd2);
-    
+    sensors[0].fd=0;
+    sensors[0].fd2=0;
+    connect_pipe(sensors[0].name,&sensors[0].fd,&sensors[0].fd2);
     //altitude1
     strcpy(sensors[1].name,"Altitude_1");
     sensors[1].port=20010;
@@ -55,10 +56,9 @@ int init_sensors(){
     sensors[5].delay=300;
     
     //fd sockets
-    for(int i=0;i<6;i++){
+    for(int i=1;i<6;i++){
         connect_socket(sensors[i].port, &sensors[i].fd);
     } 
-    
     return 0;
     
 }
