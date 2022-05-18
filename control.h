@@ -6,9 +6,15 @@ int connect_pipe(char *pipe_name, int *fd_read, int *fd_write);
 int read_pipe_active_float(int fd, float *value);
 int read_socket_passive_float(int fd, float *value);
 
+
+
+
+//tasques sensors
 void task_read_speed(void *param);
-void task_motor(void *param);
-void task_w(void *param);
+//tasques control
+//tasques acuators
+void task_frenar_pod(void *param);
+void task_pujar_1metre(void *param);
 
 
 int init_tasks();
