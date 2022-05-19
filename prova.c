@@ -26,9 +26,10 @@ int main() {
 
     //v=at
     float micro=1000000;
-    float a=3.6,b=a*micro;
-    double temps_motor=micro*sqrt((double)((1.5f)/-(2*pump_acceleration+lunar_gravity)));
-
-    printf("a=%f b=%f\n, pasat a int=%d, pasat a double %lf\n tempsmotor=%d",a,b,(int)b,(double)b,(int)temps_motor);
-    
+    float a=3.8,b=a*micro;
+    //double temps_motor=micro*sqrt((double)((1.5f)/-(2*pump_acceleration+lunar_gravity)));
+    double temps_motor=1;
+    printf("a=%f b=%f\n, pasat a int=%d, pasat a double %lf\n tempsmotor=%d\n",a,b,(int)b,(double)b,(int)temps_motor);
+    float alfa=3.2;
+    printf("a truncat %d alfa trunc %d",(int)a,(int)alfa);
     }

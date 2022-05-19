@@ -23,7 +23,7 @@
 #include <semaphore.h>
 
 static float micro=1000000;
-static float speed=0.0,alt1=100.0,alt2=100.0,alt3=100.0;
+static float speed=0.0,alt1=150.0,alt2=120.0,alt3=100.0;
 static int left=0,right=0;
 
 
@@ -113,7 +113,7 @@ void task_manual(void *param){
     while(1) {
         
         c=getchar();
-        if(c=='w'){
+        if(c=='w' || c=='W'){
             send_action(actuators[0].fd,"start");
             send_action(actuators[1].fd,"start");
             usleep(350000);
@@ -122,7 +122,7 @@ void task_manual(void *param){
             send_action(actuators[0].fd,"turnoff");
             send_action(actuators[1].fd,"turnoff");
         }
-        else if(c=='a'){
+        else if(c=='a' || c=='A'){
             send_action(actuators[2].fd,"right");
             usleep(350000);
             c='\0';
@@ -130,7 +130,7 @@ void task_manual(void *param){
             send_action(actuators[2].fd,"release");
             
         }
-        else if(c=='d'){
+        else if(c=='d' || c=='D'){
             send_action(actuators[2].fd,"left");
             usleep(350000);
             c='\0';
@@ -182,11 +182,13 @@ void task_read_right(void *param){
 
 //************************* Tasques control scheduler
 
-
+static int lloc=0;
+static int motor_ences=0;
 void task_mantenir_velocitat(void *param){
     
-    
-    if (speed>0.1){
+    //sem_wait(&sem_motor_ences);
+
+    if (speed>0.1 && motor_ences==0 && lloc==0){
         //printf("entra manternir speed valor =%f\n",speed);
         //*** ptask aperdiodiques
         PTASK taskfrenar=NULL;
@@ -199,68 +201,194 @@ void task_mantenir_velocitat(void *param){
 
 }
 
-sem_t sem_1metre;
+
 
 static int i=0;
 void task_mantenir_altura(void *param){
-    sem_wait(&sem_1metre);
+    //sem_wait(&sem_motor_ences);
     //printf("entra manternir alt valor alt3=%f\n",alt3);
-    if((alt1<=2.5 || alt2<=2.5 || alt3<=2.5) && (speed>-0.08)){
-        printf("entra ifmanternir alt valor alt3=%f i=%d%d%d\n",alt3,i,i,i);
-        i++;
+    // mirar generacions de lluna i pensar si if((alt1<=2.5 || alt2<=2.5 || alt3<=2.5)
+    //&&motor_ences==0?
+    if( (alt1<=3 || alt2<=3 || alt3<=3)  && (speed>-0.05) && motor_ences==0 && lloc==0){
+        //printf("entra ifmanternir alt valor alt3=%f i=%d%d%d\n",alt3,i,i,i);
+        //i++;
         //*** ptask aperdiodiques
-        PTASK task1metre=NULL;
+        PTASK taskterra=NULL;
         //ACTUATORS TASKCREATE 
-        Task_create(&task1metre, "pujar 1 metre", task_pujar_1metre, NULL, 0, 250);
-        Readyqueue_enqueue(actuators_queue,task1metre);
+        Task_create(&taskterra, "evitar terra", task_evitar_terra, NULL, 0, 250);
+        Readyqueue_enqueue(actuators_queue,taskterra);
         
     }
-    else sem_post(&sem_1metre);
+    //else sem_post(&sem_motor_ences);
 }
+
+void task_comprova_aparcar(void *param){
+    if((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
+        PTASK aparcar=NULL;
+        //ACTUATORS TASKCREATE 
+        Task_create(&aparcar, "apacardaer pod", task_aparcar, NULL, 0, 1);
+        Readyqueue_enqueue(actuators_queue,aparcar);
+        lloc=1;
+        while(lloc==1){
+        float temps_motor=(((-speed/((2*pump_acceleration)+lunar_gravity))*micro))+30000; // +50000 per corretgit delay
+        //printf("entra en frenar\n valor=%f",temps_motor);
+        if (temps_motor>0 && (speed>0.1) && motor_ences==0){
+            motor_ences=1;
+            send_action(actuators[0].fd,"start");
+            send_action(actuators[1].fd,"start");
+            usleep((int)temps_motor);
+            send_action(actuators[0].fd,"turnoff");
+            send_action(actuators[1].fd,"turnoff");
+            motor_ences=0;
+        }  }  
+    
+    }
+}   
 
 //********************** Tasques actuators queue
 
+static int time_ini=350000;
+void task_dreta_inicial(void *param){
+    
+    send_action(actuators[2].fd,"left");
+    usleep(time_ini);
+    send_action(actuators[2].fd,"release");
+    
+
+}
+
+void task_aparcar(void *param){
+    //printf("Task aparcar!\n");
+    send_action(actuators[2].fd,"right");
+    usleep(time_ini);
+    send_action(actuators[2].fd,"release");
+    if (!((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2) && (alt1<=1.55 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 && speed>-0.04){
+        motor_ences=1;
+        send_action(actuators[0].fd,"start");
+        send_action(actuators[1].fd,"start");
+        while((alt1<=1.9 || alt2<=1.9 || alt3<=1.9) && speed>0);
+        send_action(actuators[0].fd,"turnoff");
+        send_action(actuators[1].fd,"turnoff");
+        motor_ences=0;
+    }
+    int intent=0;
+    while(intent<30){
+        
+        while((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
+        if ((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
+            
+                //printf("igual!\n");
+                usleep(150000);
+                //while((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2);
+
+        
+        } 
+        else {
+            //printf("diferent cabro\n");
+            if((alt1<=1.5 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 ){
+                motor_ences=1;
+            send_action(actuators[0].fd,"start");
+            send_action(actuators[1].fd,"start");
+            while((alt1<=1.9 || alt2<=1.9 || alt3<=1.9)&& speed>-0.04);
+            send_action(actuators[0].fd,"turnoff");
+            send_action(actuators[1].fd,"turnoff");
+            motor_ences=0;
+            }
+        }
+
+
+    }
+    if (!((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2) && (alt1<=1.55 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 && speed>-0.04){
+        motor_ences=1;
+        send_action(actuators[0].fd,"start");
+        send_action(actuators[1].fd,"start");
+        while((alt1<=1.9 || alt2<=1.9 || alt3<=1.9) && speed>0);
+        send_action(actuators[0].fd,"turnoff");
+        send_action(actuators[1].fd,"turnoff");
+        motor_ences=0;
+    }
+    usleep(150000);
+    intent ++;
+    }
+    if ((alt1<=1.55 || alt2<=1.25 || alt3<=1.25) && motor_ences==0){
+        motor_ences=1;
+        send_action(actuators[0].fd,"start");
+        send_action(actuators[1].fd,"start");
+        while ((alt1<=2.1 || alt2<=2.1 || alt3<=2.1) && speed>-0.04);
+        send_action(actuators[0].fd,"turnoff");
+        send_action(actuators[1].fd,"turnoff");
+        motor_ences=1;
+    }
+    //quan acaba torna velocitat inicial
+    
+    send_action(actuators[2].fd,"left");
+    usleep(time_ini);
+    send_action(actuators[2].fd,"release");
+    lloc=0;
+}
+
 void task_frenar_pod(void *param){
     
-    float temps_motor=(((-speed/((2*pump_acceleration)+lunar_gravity))*micro)+30000); // + per corretgit delay
+    motor_ences=1;
+    /*
+    float temps_motor=(((-speed/((2*pump_acceleration)+lunar_gravity))*micro)+40000); // + per corretgit delay
     //printf("entra en frenar\n valor=%f",temps_motor);
-    if (temps_motor>0 && (speed>-0.08)){
+    if (temps_motor>0 && (speed>0)){
+        printf("dioos %d\n",i);
+        i++;
         send_action(actuators[0].fd,"start");
         send_action(actuators[1].fd,"start");
         usleep((int)temps_motor);
         send_action(actuators[0].fd,"turnoff");
         send_action(actuators[1].fd,"turnoff");
     }
+    */
     
-    /*
     send_action(actuators[0].fd,"start");
     send_action(actuators[1].fd,"start");
-    while(speed>0.1);
+    while(speed>0.08 && alt2<10);
     send_action(actuators[0].fd,"turnoff");
     send_action(actuators[1].fd,"turnoff");
-    */
+    
+
+   motor_ences=0;
 
 }
 
-void task_pujar_1metre(void *param){
-    //float micro2=100000;
+void task_evitar_terra(void *param){
+    
+    motor_ences=1;
+    /*
     double temps_motor=((double)micro)*sqrt((double)((1.5f)/-(2*pump_acceleration+lunar_gravity))); //la formula hauria de ser aquesta pero puja molt mes i es surt :/
-    double factor=0.35;
+    double factor=0.30;
     temps_motor=temps_motor*factor;//minvento un factor i provo optim
-    if (temps_motor>0 && (speed>-0.08)){
+    if (temps_motor>0 && (speed>0)){
+
         send_action(actuators[0].fd,"start");
         send_action(actuators[1].fd,"start");
         usleep((int)temps_motor);
         send_action(actuators[0].fd,"turnoff");
         send_action(actuators[1].fd,"turnoff");
-        sem_post(&sem_1metre);
+        
     }
+    */
+    send_action(actuators[0].fd,"start");
+    send_action(actuators[1].fd,"start");
+    while((alt1<=2.5 || alt2<=2.5 || alt3<=2.5 )&& speed>-0.04);
+    send_action(actuators[0].fd,"turnoff");
+    send_action(actuators[1].fd,"turnoff");
     
+    
+    
+    motor_ences=0;
+    //sem_post(&sem_motor_ences);
 
 }
+
+//*****************
 int init_tasks() {
     
-    sem_init(&sem_1metre,0,1);
+    //sem_init(&sem_motor_ences,0,1);
     
     char c;
     
@@ -272,7 +400,7 @@ int init_tasks() {
     
     //Codi per mode manual (No forma part de la misió LLPRTS)
     c=getchar();
-    if(c=='m'){
+    if(c=='m' || c=='M'){
         while(c!=' '){
         // Set the terminal to raw mode
         system("stty raw");
@@ -282,36 +410,44 @@ int init_tasks() {
         }
         PTASK manualtask=NULL;
         Task_create(&manualtask, "manualtask", task_manual, NULL, 0, 0);
-        Readyqueue_enqueue(sensors_queue, manualtask);
+        Readyqueue_enqueue(actuators_queue, manualtask);
+    
     }
-    //codi misió:
+
+    //**********codi misió:
 
     else{
     
-    
-    
+  
     //SENSORS QUEUE *****************************
     PTASK taskpeed=NULL,taskalt1=NULL,taskalt2=NULL,taskalt3=NULL,taskright=NULL;
-    Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 20, 3);
+    Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 50, 1);
     Readyqueue_enqueue(sensors_queue, taskpeed);
 
-    Task_create(&taskalt1, "Update alt1", task_read_alt1, NULL,60, 100);
+    Task_create(&taskalt1, "Update alt1", task_read_alt1, NULL,300, 3);
     Readyqueue_enqueue(sensors_queue, taskalt1);
     
-    Task_create(&taskalt2, "Update alt2", task_read_alt2, NULL, 50, 100);
+    Task_create(&taskalt2, "Update alt2", task_read_alt2, NULL, 200, 2);
     Readyqueue_enqueue(sensors_queue, taskalt2);
 
-    Task_create(&taskalt3, "Update alt3", task_read_alt3, NULL, 70, 100);
+    Task_create(&taskalt3, "Update alt3", task_read_alt3, NULL, 400, 4);
     Readyqueue_enqueue(sensors_queue, taskalt3);
 
     //CONTROL QUEUE **************************
-    PTASK maltura=NULL,mspeed=NULL;
-    Task_create(&maltura, "manteniralt", task_mantenir_altura, NULL, 300, 500);
+    PTASK maltura=NULL,mspeed=NULL,comprova_aparcar=NULL;
+    Task_create(&maltura, "manteniralt", task_mantenir_altura, NULL, 200, 2);
     Readyqueue_enqueue(control_queue, maltura);
     
-    Task_create(&mspeed, "mantenirspeed", task_mantenir_velocitat, NULL, 200, 500);
+    Task_create(&mspeed, "mantenirspeed", task_mantenir_velocitat, NULL, 100, 1);
     Readyqueue_enqueue(control_queue, mspeed);
     
+    Task_create(&comprova_aparcar, "aparca comprova", task_comprova_aparcar, NULL, 300, 3);
+    Readyqueue_enqueue(control_queue, comprova_aparcar);
+    //ACTUATOR QUEUE ********+
+    PTASK dreta_ini;
+    Task_create(&dreta_ini, "vel inicial", task_dreta_inicial, NULL, 0, 1);
+    Readyqueue_enqueue(actuators_queue, dreta_ini);
+
     }
 
 
