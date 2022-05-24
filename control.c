@@ -143,6 +143,20 @@ void task_manual(void *param){
     }
 }
 
+//*********************** tasca per aproximar altures
+int comprovar_altures(void *param){
+    /*
+    int alt1r=roundf(alt1),alt2r=roundf(alt2),alt3r=roundf(alt3);
+    if(alt1r==alt2r && alt1r==alt3r && alt3r==alt2r){
+    usleep(100000);
+    return (alt1r==alt2r && alt1r==alt3r && alt3r==alt2r);
+    }
+    else return 0;
+    mes precis pero hauria de canviar el actuator aparcar i no tinc temps
+    */  
+    int alt1r=roundf(alt1),alt2r=roundf(alt2),alt3r=roundf(alt3);
+    return (alt1r==alt2r && alt1r==alt3r && alt3r==alt2r);
+}
 
 //********************** Tasques sensors scheduler
  
@@ -184,6 +198,7 @@ void task_read_right(void *param){
 
 static int lloc=0;
 static int motor_ences=0;
+
 void task_mantenir_velocitat(void *param){
     
     //sem_wait(&sem_motor_ences);
@@ -209,7 +224,7 @@ void task_mantenir_altura(void *param){
     //printf("entra manternir alt valor alt3=%f\n",alt3);
     // mirar generacions de lluna i pensar si if((alt1<=2.5 || alt2<=2.5 || alt3<=2.5)
     //&&motor_ences==0?
-    if( (alt1<=3 || alt2<=3 || alt3<=3)  && (speed>-0.05) && motor_ences==0 && lloc==0){
+    if( (alt1<=2.75 || alt2<=2.75 || alt3<=2.75)  && (speed>-0.06) && motor_ences==0 && lloc==0 && alt2<8){
         //printf("entra ifmanternir alt valor alt3=%f i=%d%d%d\n",alt3,i,i,i);
         //i++;
         //*** ptask aperdiodiques
@@ -221,18 +236,32 @@ void task_mantenir_altura(void *param){
     }
     //else sem_post(&sem_motor_ences);
 }
-
+static int intent=0;
+#define MAX_INTENT 25
 void task_comprova_aparcar(void *param){
-    if((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
+    
+    if(comprovar_altures(NULL)){
         PTASK aparcar=NULL;
         //ACTUATORS TASKCREATE 
         Task_create(&aparcar, "apacardaer pod", task_aparcar, NULL, 0, 1);
         Readyqueue_enqueue(actuators_queue,aparcar);
         lloc=1;
-        while(lloc==1){
+        intent=0;
+        //quan actuar queue fa aparcar control queue primer comprova altura
+        if((alt1<=2.3 || alt2<=2.3 || alt3<=2.3) && motor_ences==0 ){
+                motor_ences=1;
+            send_action(actuators[0].fd,"start");
+            send_action(actuators[1].fd,"start");
+            while((alt1<=2.5 || alt2<=2.5 || alt3<=2.5)&& speed>-0.04);
+            send_action(actuators[0].fd,"turnoff");
+            send_action(actuators[1].fd,"turnoff");
+            motor_ences=0;
+            }
+        while(intent<MAX_INTENT){
+        //control queue socupa de mantenir speed
         float temps_motor=(((-speed/((2*pump_acceleration)+lunar_gravity))*micro))+30000; // +50000 per corretgit delay
         //printf("entra en frenar\n valor=%f",temps_motor);
-        if (temps_motor>0 && (speed>0.1) && motor_ences==0){
+        if (temps_motor>0 && (speed>0.1) && motor_ences==0 && alt2<8){
             motor_ences=1;
             send_action(actuators[0].fd,"start");
             send_action(actuators[1].fd,"start");
@@ -240,14 +269,26 @@ void task_comprova_aparcar(void *param){
             send_action(actuators[0].fd,"turnoff");
             send_action(actuators[1].fd,"turnoff");
             motor_ences=0;
-        }  }  
-    
+        }  
+        } 
+        while(lloc!=0){
+        if( (alt1<=1.75 || alt2<=1.75 || alt3<=1.75)  && (speed>-0.05) && motor_ences==0 && lloc==0){ 
+        //quan acaben els intents control queue fa mantenir altura
+        motor_ences=1;
+        send_action(actuators[0].fd,"start");
+        send_action(actuators[1].fd,"start");
+        while((alt1<=2 || alt2<=2 || alt3<=2 )&& speed>-0.04);
+        send_action(actuators[0].fd,"turnoff");
+        send_action(actuators[1].fd,"turnoff");
+        motor_ences=0;
+        }
+        }
     }
 }   
 
 //********************** Tasques actuators queue
 
-static int time_ini=350000;
+static int time_ini=300000;
 void task_dreta_inicial(void *param){
     
     send_action(actuators[2].fd,"left");
@@ -262,7 +303,7 @@ void task_aparcar(void *param){
     send_action(actuators[2].fd,"right");
     usleep(time_ini);
     send_action(actuators[2].fd,"release");
-    if (!((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2) && (alt1<=1.55 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 && speed>-0.04){
+    if (!(comprovar_altures(NULL)) && (alt1<=1.75 || alt2<=1.75 || alt3<=1.75) && motor_ences==0 && speed>-0.04){
         motor_ences=1;
         send_action(actuators[0].fd,"start");
         send_action(actuators[1].fd,"start");
@@ -271,25 +312,25 @@ void task_aparcar(void *param){
         send_action(actuators[1].fd,"turnoff");
         motor_ences=0;
     }
-    int intent=0;
-    while(intent<30){
+    
+    while(intent<MAX_INTENT){
         
-        while((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
-        if ((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2){
+        while(comprovar_altures(NULL)){
+        if (comprovar_altures(NULL)){
             
                 //printf("igual!\n");
-                usleep(150000);
-                //while((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2);
+                usleep(100000);
+                //while(comprovar_altures(NULL));
 
         
         } 
         else {
             //printf("diferent cabro\n");
-            if((alt1<=1.5 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 ){
+            if( (alt1<=2.2 || alt2<=2.2 || alt3<=2.2) && motor_ences==0 ){
                 motor_ences=1;
             send_action(actuators[0].fd,"start");
             send_action(actuators[1].fd,"start");
-            while((alt1<=1.9 || alt2<=1.9 || alt3<=1.9)&& speed>-0.04);
+            while((alt1<=2.3 || alt2<=2.3 || alt3<=2.3)&& speed>-0.06);
             send_action(actuators[0].fd,"turnoff");
             send_action(actuators[1].fd,"turnoff");
             motor_ences=0;
@@ -298,27 +339,28 @@ void task_aparcar(void *param){
 
 
     }
-    if (!((int)alt1==(int)alt2 && (int)alt1==(int)alt3 && (int)alt3==(int)alt2) && (alt1<=1.55 || alt2<=1.55 || alt3<=1.55) && motor_ences==0 && speed>-0.04){
+    if (!(comprovar_altures(NULL)) && (alt1<=2 || alt2<=2 || alt3<=2) && motor_ences==0 && speed>-0.04){
         motor_ences=1;
         send_action(actuators[0].fd,"start");
         send_action(actuators[1].fd,"start");
-        while((alt1<=1.9 || alt2<=1.9 || alt3<=1.9) && speed>0);
+        while((alt1<=2.2 || alt2<=2.2 || alt3<=2.2) && speed>0);
         send_action(actuators[0].fd,"turnoff");
         send_action(actuators[1].fd,"turnoff");
         motor_ences=0;
     }
-    usleep(150000);
+    usleep(120000);
     intent ++;
     }
-    if ((alt1<=1.55 || alt2<=1.25 || alt3<=1.25) && motor_ences==0){
+    //quan acaba comprova altura
+    if((alt1<=2 || alt2<=2 || alt3<=2) && motor_ences==0 ){
         motor_ences=1;
         send_action(actuators[0].fd,"start");
         send_action(actuators[1].fd,"start");
-        while ((alt1<=2.1 || alt2<=2.1 || alt3<=2.1) && speed>-0.04);
+        while((alt1<=2.1 || alt2<=2.1 || alt3<=2.1)&& speed>-0.04);
         send_action(actuators[0].fd,"turnoff");
         send_action(actuators[1].fd,"turnoff");
-        motor_ences=1;
-    }
+        motor_ences=0;
+        }
     //quan acaba torna velocitat inicial
     
     send_action(actuators[2].fd,"left");
@@ -346,7 +388,7 @@ void task_frenar_pod(void *param){
     
     send_action(actuators[0].fd,"start");
     send_action(actuators[1].fd,"start");
-    while(speed>0.08 && alt2<10);
+    while(speed>0.08 && alt2<8);
     send_action(actuators[0].fd,"turnoff");
     send_action(actuators[1].fd,"turnoff");
     
@@ -374,7 +416,7 @@ void task_evitar_terra(void *param){
     */
     send_action(actuators[0].fd,"start");
     send_action(actuators[1].fd,"start");
-    while((alt1<=2.5 || alt2<=2.5 || alt3<=2.5 )&& speed>-0.04);
+    while((alt1<=3 || alt2<=3 || alt3<=3 )&& speed>-0.06);
     send_action(actuators[0].fd,"turnoff");
     send_action(actuators[1].fd,"turnoff");
     
@@ -401,6 +443,7 @@ int init_tasks() {
     //Codi per mode manual (No forma part de la misió LLPRTS)
     c=getchar();
     if(c=='m' || c=='M'){
+        printf("\n");
         while(c!=' '){
         // Set the terminal to raw mode
         system("stty raw");
@@ -418,7 +461,11 @@ int init_tasks() {
 
     else{
     
-  
+    //ACTUATOR QUEUE ********+
+    PTASK dreta_ini;
+    Task_create(&dreta_ini, "vel inicial", task_dreta_inicial, NULL, 0, 1);
+    Readyqueue_enqueue(actuators_queue, dreta_ini);
+
     //SENSORS QUEUE *****************************
     PTASK taskpeed=NULL,taskalt1=NULL,taskalt2=NULL,taskalt3=NULL,taskright=NULL;
     Task_create(&taskpeed, "Update speed", task_read_speed, NULL, 50, 1);
@@ -443,10 +490,7 @@ int init_tasks() {
     
     Task_create(&comprova_aparcar, "aparca comprova", task_comprova_aparcar, NULL, 300, 3);
     Readyqueue_enqueue(control_queue, comprova_aparcar);
-    //ACTUATOR QUEUE ********+
-    PTASK dreta_ini;
-    Task_create(&dreta_ini, "vel inicial", task_dreta_inicial, NULL, 0, 1);
-    Readyqueue_enqueue(actuators_queue, dreta_ini);
+    
 
     }
 
